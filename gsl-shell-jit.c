@@ -647,25 +647,22 @@ int main(int argc, char **argv)
 {
   int status;
   struct Smain s;
+  struct gsl_shell_state gs[1];
 #ifdef USE_READLINE
   initialize_readline();
 #endif
-  gsl_shell_init();
+  gsl_shell_open(gs);
 
-  GSL_SHELL_LOCK();
-  lua_State *L = lua_open();  /* create state */
-  if (L == NULL) {
-    l_message(argv[0], "cannot create state: not enough memory");
-    return EXIT_FAILURE;
-  }
+  pthread_mutex_lock(gs->exec_mutex);
+
   s.argc = argc;
   s.argv = argv;
-  status = lua_cpcall(L, pmain, &s);
-  report(L, status);
-  GSL_SHELL_UNLOCK();
+  status = lua_cpcall(sg->L, pmain, &s);
+  report(sg->L, status);
 
-  lua_close_with_graph(L);
-  gsl_shell_close();
+  pthread_mutex_unlock(gs->exec_mutex);
+
+  gsl_shell_close_with_graph(L);
 
   return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
