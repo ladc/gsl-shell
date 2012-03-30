@@ -19,7 +19,7 @@ public:
 
   const str& operator= (const char* s) 
   {
-    str_copy_c(this, &s);
+    str_copy_c(this, s);
     return *this;
   }
 

@@ -29,34 +29,25 @@
 #include "lua-utils.h"
 #include "fatal.h"
 
-static struct gsl_shell_class gsl_shell_base_class = {NULL, NULL};
-
 void
 gsl_shell_open (struct gsl_shell_state *gs)
 {
-  gs->class = &gsl_shell_base_class;
-
   gs->L = lua_open();  /* create state */
 
   if (unlikely(gs->L == NULL))
     fatal_exception("cannot create state: not enough memory");
 
-  if (gs->class->on_open)
-    {
-      if (unlikely(gs->class->on_open(gs) != 0))
-	fatal_exception("error during state post inizialization");
-    }
-  //  pthread_mutex_init (&gs->exec_mutex, NULL);
-  //  pthread_mutex_init (&gs->shutdown_mutex, NULL);
-  //  gs->is_shutting_down = 0;
+  pthread_mutex_init (&gs->exec_mutex, NULL);
+  pthread_mutex_init (&gs->shutdown_mutex, NULL);
+  gs->is_shutting_down = 0;
 }
 
 void
 gsl_shell_close (struct gsl_shell_state *gs)
 {
   
-  //  pthread_mutex_destroy (gs->exec_mutex);
-  //  pthread_mutex_destroy (gs->shutdown_mutex);
+  pthread_mutex_destroy (&gs->exec_mutex);
+  pthread_mutex_destroy (&gs->shutdown_mutex);
 }
 
 int

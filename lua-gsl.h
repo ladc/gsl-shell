@@ -9,15 +9,7 @@ __BEGIN_DECLS
 
 #include <lua.h>
 
-struct gsl_shell_state;
-
-struct gsl_shell_class {
-  int (*on_open)(struct gsl_shell_state*);
-  int (*on_close)(struct gsl_shell_state*);
-};
-
 struct gsl_shell_state {
-  struct gsl_shell_class *class;
   lua_State *L;
   pthread_mutex_t exec_mutex;
   pthread_mutex_t shutdown_mutex;
