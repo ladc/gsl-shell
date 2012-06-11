@@ -84,15 +84,21 @@ end
 -- t2 is the serialised object
 local function testcompare(t1,t2,ignore_mt)
   local ty1,ty2 = type(t1),type(t2)
-  if ty1=="cdata" or ty2=="cdata" then
-    local cty1 = tostring(ffi.typeof(t1))
-    if cty1=="ctype<complex>" then
-      print(t1,t2)
+  local c1, c2 = ty1=="cdata", ty2=="cdata"
+  if c1 or c2 then
+    local cty1 = c1 and tostring(ffi.typeof(t1)) or ty1
+    local cty2 = c2 and tostring(ffi.typeof(t2)) or ty2
+    if cty1=="ctype<complex>" and cty2=="ctype<complex>" then
       return complex_compare(t1, t2)
-    elseif cty1=="ctype<uint64_t>" or cty1=="ctype<int64_t>" then
+    elseif cty1=="ctype<uint64_t>" or cty1=="ctype<int64_t>" and cty1==cty2 then
+      return number_compare(n1,n2)
+    else 
       local n1,n2 = tonumber(t1), tonumber(t2)
-      if n1 and n2 then return number_compare(n1,n2) end
-    else return tostring(t1)==tostring(t2)
+      if n1 and n2 then 
+        return number_compare(n1,n2) 
+      else
+        return tostring(t1)==tostring(t2)
+      end
     end
   end
   if ty1 ~= ty2 then return false end
@@ -166,8 +172,7 @@ local function serialize (f, o, indent)
     local cotype = tostring(ffi.typeof(o))
     if cotype=="ctype<uint64_t>" or cotype=="ctype<int64_t>" then
       -- boxed (u)int64
-      o = tonumber(o)
-      f:write(sformat("%.17e",o))
+      f:write(sformat("%.17e",tonumber(o)))
     elseif cotype=="ctype<complex>" then
       f:write(sformat("%.17e+%.17ei",complex.real(o),complex.imag(o)))
     else f:write(sformat("%q",tostring(o))) end
@@ -218,7 +223,7 @@ reset()
 
 -- Call dotest and log the results.
 local function logresult(testf,record,category,name,description)
-  local result, msg = dotest(testf,record, category, name)
+  local result, msg = dotest(testf,record,category,name)
   rc[result] = rc[result] + 1
   r[result][rc[result]] = category.."."..name
   log(result, "\t", name , description and ": "..description or "",
