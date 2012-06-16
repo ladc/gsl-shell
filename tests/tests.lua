@@ -83,14 +83,14 @@ end
 -- compare two arbitrary objects
 -- t2 is the serialised object
 local function testcompare(t1,t2,ignore_mt)
-  local ty1,ty2 = type(t1),type(t2)
+  local ty1, ty2 = type(t1), type(t2)
   local c1, c2 = ty1=="cdata", ty2=="cdata"
   if c1 or c2 then
     local cty1 = c1 and tostring(ffi.typeof(t1)) or ty1
     local cty2 = c2 and tostring(ffi.typeof(t2)) or ty2
-    if cty1=="ctype<complex>" and cty2=="ctype<complex>" then
+    if cty1=="ctype<complex>" or cty2=="ctype<complex>" then
       return complex_compare(t1, t2)
-    elseif cty1=="ctype<uint64_t>" or cty1=="ctype<int64_t>" and cty1==cty2 then
+    elseif (cty1=="ctype<uint64_t>" or cty1=="ctype<int64_t>") and cty1==cty2 then
       return number_compare(n1,n2)
     else 
       local n1,n2 = tonumber(t1), tonumber(t2)
@@ -326,6 +326,7 @@ else
     testcategory = testcategory,
     summary = summary,
     reset = reset,
-    results = r, counts=rc
+    results = r, counts=rc,
+    testcompare = testcompare,
     }
 end
