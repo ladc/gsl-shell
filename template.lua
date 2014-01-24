@@ -68,7 +68,7 @@ end
 
 local function read_file(filename)
    local f = io.open(filename)
-   if not f then 
+   if not f then
       error(string.format('error opening template file %s', filename))
    end
    local content = f:read('*a')
