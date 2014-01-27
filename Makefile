@@ -64,11 +64,11 @@ LUA_BASE_FILES = bspline.lua fft-init.lua integ-init.lua template.lua check.lua 
 	import.lua plot3d.lua sf.lua vegas.lua eigen.lua help.lua cgdt.lua expr-actions.lua \
 	expr-lexer.lua expr-parse.lua expr-print.lua gdt-factors.lua gdt-interp.lua gdt-expr.lua \
 	gdt-hist.lua gdt-lm.lua gdt.lua gdt-parse-csv.lua gdt-plot.lua lm-expr.lua \
-	lm-helpers.lua algorithm.lua monomial.lua linfit_rank.lua matrix-power.lua
+	lm-helpers.lua algorithm.lua monomial.lua linfit_rank.lua matrix-power.lua cblas.lua
 
 HELP_FILES = graphics matrix iter integ ode nlfit vegas rng fft
 DEMOS_LIST = bspline fft plot wave-particle fractals ode nlinfit integ anim linfit contour svg graphics sf vegas gdt-lm
-LUA_TEMPLATES = gauss-kronrod-x-wgs qag rk8pd lmfit qng rkf45 ode-defs rk4 sf-defs vegas-defs rnd-defs
+LUA_TEMPLATES = gauss-kronrod-x-wgs qag rk8pd lmfit qng rkf45 ode-defs rk4 sf-defs vegas-defs rnd-defs rk8pd-vec rkf45vec
 EXAMPLES_FILES_SRC = am-women-weight perf-julia metro-lm-example exam
 
 LUA_BASE_FILES += $(DEMOS_LIST:%=demos/%.lua)
