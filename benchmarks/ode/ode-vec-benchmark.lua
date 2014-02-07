@@ -1,10 +1,9 @@
 
-local template = require 'template'
+-- Benchmark of ODE integration functions.
+-- The benchmark integrates the Van der Pol differential equation
+-- using over a long time interval
 
-local ffi = require "ffi"
-
-local ode_spec = {N = 2, eps_abs = 1e-6, eps_rel = 0, a_y = 1, a_dydt = 0}
-local ode = template.load('rkf45vec', ode_spec)
+local format = string.format
 
 function f_vanderpol_gen(mu)
    return function(t, y, f) 
@@ -13,15 +12,21 @@ function f_vanderpol_gen(mu)
 	  end
 end
 
+local results = {}
+
 local f = f_vanderpol_gen(10.0)
-local s = ode.new()
-local y = ffi.new('double[2]', {1, 0})
+local s = num.odevec {N = 2, eps_abs = 1e-6, method = 'rkf45'}
+local y0 = matrix.vec {1, 0}
 local t0, t1, h0 = 0, 20000, 0.01
-local init, evol = ode.init, ode.evolve
+local evol = s.evolve
 for k=1, 10 do
-   init(s, t0, h0, f, y)
+   s:init(t0, h0, f, y0.data)
    while s.t < t1 do
       evol(s, f, t1)
    end
-   print(s.t, s.y[0], s.y[1])
+   results[#results+1] = format('%g %g %g', s.t, s.y[0], s.y[1])
+end
+
+for i, line in ipairs(results) do
+   print(i, line)
 end

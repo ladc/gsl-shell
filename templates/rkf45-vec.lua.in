@@ -24,29 +24,21 @@ local abs, max, min = math.abs, math.max, math.min
 
 local ffi = require "ffi"
 
+local cblas = require 'cblas'
+
 local vecsize = $(N) * ffi.sizeof('double')
 
-local cblas = ffi.load(ffi.os == "Windows" and "libgslcblas-0" or "gslcblas")
-
-ffi.cdef[[
-  typedef struct {
-    double t;
-    double h;
-    double y[$(N)];
-    double dydt[$(N)];
-  } odevec_state;
-
-  void cblas_daxpy (const int N, const double ALPHA,
-		    const double * X, const int INCX,
-		    double * Y, const int INCY);
-]]
-
-local function ode_new()
-   return ffi.new('odevec_state')
+local function ode_vec_new()
+   return {t    = 0,
+	   h    = 1,
+	   dim  = $(N),
+	   y     = ffi.new("double[$(N)]"),
+	   dydt  = ffi.new("double[$(N)]"),
+	}
 end
 
-local function ode_init(s, t0, h0, f, y)
-   ffi.copy(s.y, y, vecsize)
+local function ode_vec_init(s, t0, h0, f, y)
+   cblas.cblas_dcopy($(N), y, 1, s.y, 1)
    f(t0, s.y, s.dydt)
    s.t = t0
    s.h = h0
@@ -74,7 +66,7 @@ local ws_k4 = ffi.new('double[$(N)]')
 local ws_k5 = ffi.new('double[$(N)]')
 local ws_k6 = ffi.new('double[$(N)]')
 
-local function rkf45_evolve(s, f, t1)
+local function rkf45_vec_evolve(s, f, t1)
    local t, h = s.t, s.h
    local hadj, inc
 
@@ -172,4 +164,4 @@ local function rkf45_evolve(s, f, t1)
    return h
 end
 
-return {new= ode_new, init= ode_init, evolve= rkf45_evolve}
+return {new= ode_vec_new, init= ode_vec_init, evolve= rkf45_vec_evolve}

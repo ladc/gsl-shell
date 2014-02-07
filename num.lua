@@ -19,7 +19,7 @@ function num.ode(spec)
       if not spec[k] then spec[k] = v end
    end
 
-   local method = spec.method and spec.method or 'rkf45'
+   local method = spec.method or 'rkf45'
    if not is_known[method] then error('unknown ode method: ' .. method) end
    spec.method = nil
 
@@ -42,7 +42,7 @@ local NLINFIT_METHODS = {
 function num.odevec(spec)
    local required = {N= 'number', eps_abs= 'number'}
    local defaults = {eps_rel = 0, a_y = 1, a_dydt = 0}
-   local is_known = {rk8pd= true}
+   local is_known = {rkf45= true, rk8pd= true}
 
    for k, tp in pairs(required) do
       if type(spec[k]) ~= tp then
@@ -53,7 +53,7 @@ function num.odevec(spec)
       if not spec[k] then spec[k] = v end
    end
 
-   local method = spec.method and spec.method or 'rk8pd'
+   local method = spec.method or 'rkf45'
    if not is_known[method] then error('unknown ode method: ' .. method) end
    spec.method = nil
 
@@ -62,7 +62,6 @@ function num.odevec(spec)
    local mt = {
       __index = {evolve = ode.evolve, init = ode.init}
    }
-
    return setmetatable(ode.new(), mt)
 end
 
