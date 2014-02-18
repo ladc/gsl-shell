@@ -120,7 +120,7 @@ void cblas_dtrsm(const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side,
 if jit.os == 'Linux' then
 	return ffi.C
 elseif jit.os == 'OSX' then
-	return ffi.load('libgsl.0.dylib')
+	return ffi.load('libgslcblas.0.dylib')
 else
 	return ffi.load('libgslcblas-0')
 end
