@@ -41,7 +41,7 @@ local RowMajor, Trans, NoTrans = gsl.CblasRowMajor, gsl.CblasTrans, gsl.CblasNoT
 
 local function ode_vec_init(s, t0, h0, f, y)
    cblas.cblas_dcopy($(N), y.data, 1, s.raw_y, 1)
-   f(t0, y.data, s.raw_dydt)
+   f(t0, y.data-1, s.raw_dydt-1)
    s.t = t0
    s.h = h0
 end
@@ -206,7 +206,7 @@ local function rk8pd_vec_evolve(s, f, t1)
 #     for S = 2, 13 do
          cblas.cblas_dcopy($(N), y, 1, ytmp, 1)
          cblas.cblas_dgemm(RowMajor, Trans, NoTrans, $(N), 1, $(S-1), h, k, $(N), B$(S), 1, 1.0, ytmp, 1)
-         f(t + $(ah[S-1]) * h, ytmp, k + $((S-1) * N))
+         f(t + $(ah[S-1]) * h, ytmp-1, k + $((S-1) * N)-1)
 #     end
 
       local ksum8 = s.ksum8
@@ -215,7 +215,7 @@ local function rk8pd_vec_evolve(s, f, t1)
       cblas.cblas_daxpy($(N), h, ksum8, 1, y, 1)
 
 #     if not y_err_only then
-         f(t + h, y, s_dydt)
+         f(t + h, y-1, s_dydt-1)
 #     end
 
       do
@@ -244,7 +244,7 @@ local function rk8pd_vec_evolve(s, f, t1)
    end
 
 #  if y_err_only then
-      f(t + h, y, s_dydt)
+      f(t + h, y-1, s_dydt-1)
 #  end
 
    cblas.cblas_dcopy($(N), y, 1, s_y, 1)

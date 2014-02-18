@@ -7,9 +7,9 @@ local format = string.format
 
 function f_vanderpol_gen(mu)
    return function(t, yv, dydt)
-	     local x, y = yv[0], yv[1]
-	     dydt[0] = y
-	     dydt[1] = -x + mu * y * (1-x^2)
+	     local x, y = yv[1], yv[2]
+	     dydt[1] = y
+	     dydt[2] = -x + mu * y * (1-x^2)
 	  end
 end
 

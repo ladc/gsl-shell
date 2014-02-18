@@ -39,7 +39,7 @@ local odevec_t = ffi.typeof([[
 
 local function ode_vec_init(s, t0, h0, f, y)
    ffi.copy(s.raw_y, y.data, vecsize)
-   f(t0, s.raw_y, s.raw_dydt)
+   f(t0, s.raw_y-1, s.raw_dydt-1)
    s.t = t0
    s.h = h0
 end
@@ -82,14 +82,14 @@ local function rkf45_vec_evolve(s, f, t1)
 	 cblas.cblas_daxpy ($(N), h * $(ah[1]), ws_k1, 1, ws_y, 1)
 
 	 -- k2 step
-	 f(t + $(ah[1]) * h, ws_y, ws_k2)
+	 f(t + $(ah[1]) * h, ws_y-1, ws_k2-1)
 
 	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b3[1]), ws_k1, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b3[2]), ws_k2, 1, ws_y, 1)
 
 	 -- k3 step
-	 f(t + $(ah[2]) * h, ws_y, ws_k3)
+	 f(t + $(ah[2]) * h, ws_y-1, ws_k3-1)
 
 	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b4[1]), ws_k1, 1, ws_y, 1)
@@ -97,7 +97,7 @@ local function rkf45_vec_evolve(s, f, t1)
 	 cblas.cblas_daxpy ($(N), h * $(b4[3]), ws_k3, 1, ws_y, 1)
 
 	 -- k4 step
-	 f(t + $(ah[3]) * h, ws_y, ws_k4)
+	 f(t + $(ah[3]) * h, ws_y-1, ws_k4-1)
 
 	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b5[1]), ws_k1, 1, ws_y, 1)
@@ -106,7 +106,7 @@ local function rkf45_vec_evolve(s, f, t1)
 	 cblas.cblas_daxpy ($(N), h * $(b5[4]), ws_k4, 1, ws_y, 1)
 
 	 -- k5 step
-	 f(t + $(ah[4]) * h, ws_y, ws_k5)
+	 f(t + $(ah[4]) * h, ws_y-1, ws_k5-1)
 
 	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b6[1]), ws_k1, 1, ws_y, 1)
@@ -117,7 +117,7 @@ local function rkf45_vec_evolve(s, f, t1)
 
 	 -- k6 step and final sum
 	 -- since k2 is no more used we could use k2 to store k6
-	 f(t + $(ah[5]) * h, ws_y, ws_k6)
+	 f(t + $(ah[5]) * h, ws_y-1, ws_k6-1)
 
 	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(c1), ws_k1, 1, ws_y, 1)
@@ -128,7 +128,7 @@ local function rkf45_vec_evolve(s, f, t1)
  
 #        if not y_err_only then
             -- we use ws_k2 because it is no longer needed here
-            f(t + h, ws_y, ws_k2)
+            f(t + h, ws_y-1, ws_k2-1)
 	    ffi.copy (s.raw_dydt, ws_k2, vecsize)
 #        end
 
@@ -152,7 +152,7 @@ local function rkf45_vec_evolve(s, f, t1)
    end
 
 #  if y_err_only then
-      f(t + h, ws_y, ws_k2)
+      f(t + h, ws_y-1, ws_k2-1)
       ffi.copy (s.raw_dydt, ws_k2, vecsize)
 #  end
 
