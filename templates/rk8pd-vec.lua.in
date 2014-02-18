@@ -40,8 +40,8 @@ local cblas = require 'cblas'
 local RowMajor, Trans, NoTrans = gsl.CblasRowMajor, gsl.CblasTrans, gsl.CblasNoTrans
 
 local function ode_vec_init(s, t0, h0, f, y)
-   cblas.cblas_dcopy($(N), y, 1, s.y, 1)
-   f(t0, y, s.dydt)
+   cblas.cblas_dcopy($(N), y.data, 1, s.raw_y, 1)
+   f(t0, y.data, s.raw_dydt)
    s.t = t0
    s.h = h0
 end
@@ -188,7 +188,7 @@ B13 = ffi.new('double[12]',
 # y_err_only = (a_dydt == 0)
 
 local function rk8pd_vec_evolve(s, f, t1)
-   local t, h, s_y, s_dydt = s.t, s.h, s.y, s.dydt
+   local t, h, s_y, s_dydt = s.t, s.h, s.raw_y, s.raw_dydt
    local hadj, inc
 
    local k, y = s.k, s.ytmp1
@@ -254,9 +254,22 @@ local function rk8pd_vec_evolve(s, f, t1)
    return h
 end
 
-local mt = {
-   __index = {init= ode_vec_init, evolve= rk8pd_vec_evolve}
-}
+
+local mt = {}
+do
+   local vecsize = ffi.sizeof("double")*$(N)
+   local convert_to_matrix = function(s, k)
+      local y = matrix.new($(N), 1)
+      ffi.copy(y.data,rawget(s,k),vecsize)
+--      cblas.cblas_dcopy($(N), rawget(s,k), 1, y.data, 1)
+      return y
+   end
+   local funcs = {init= ode_vec_init, evolve= rk8pd_vec_evolve}
+   local fields = {y = "raw_y", dydt = "raw_dydt"}
+   mt.__index = function(s, k)
+      return fields[k] and convert_to_matrix(s, fields[k]) or funcs[k]
+   end
+end
 
 local function ode_vec_new()
    local n = $(N)
@@ -266,8 +279,8 @@ local function ode_vec_new()
 	   h    = 1,
 	   dim  = n,
 
-	   y     = ws.data,
-	   dydt  = ws.data + n,
+	   raw_y     = ws.data,
+	   raw_dydt  = ws.data + n,
 	   ksum8 = ws.data + 2*n,
 	   ytmp1 = ws.data + 3*n,
 	   ytmp2 = ws.data + 4*n,

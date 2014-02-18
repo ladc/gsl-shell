@@ -32,14 +32,14 @@ local odevec_t = ffi.typeof([[
   struct {
     double t;
     double h;
-    double y[$(N)];
-    double dydt[$(N)];
+    double raw_y[$(N)];
+    double raw_dydt[$(N)];
   }
 ]])
 
 local function ode_vec_init(s, t0, h0, f, y)
-   ffi.copy(s.y, y, vecsize)
-   f(t0, s.y, s.dydt)
+   ffi.copy(s.raw_y, y.data, vecsize)
+   f(t0, s.raw_y, s.raw_dydt)
    s.t = t0
    s.h = h0
 end
@@ -70,12 +70,12 @@ local function rkf45_vec_evolve(s, f, t1)
    local t, h = s.t, s.h
    local hadj, inc
 
-   ffi.copy (ws_k1, s.dydt, vecsize)
+   ffi.copy (ws_k1, s.raw_dydt, vecsize)
 
    if t + h > t1 then h = t1 - t end
 
    while h > 0 do
-      ffi.copy (ws_y, s.y, vecsize)
+      ffi.copy (ws_y, s.raw_y, vecsize)
       local rmax = 0
 
       do
@@ -84,14 +84,14 @@ local function rkf45_vec_evolve(s, f, t1)
 	 -- k2 step
 	 f(t + $(ah[1]) * h, ws_y, ws_k2)
 
-	 ffi.copy (ws_y, s.y, vecsize)
+	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b3[1]), ws_k1, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b3[2]), ws_k2, 1, ws_y, 1)
 
 	 -- k3 step
 	 f(t + $(ah[2]) * h, ws_y, ws_k3)
 
-	 ffi.copy (ws_y, s.y, vecsize)
+	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b4[1]), ws_k1, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b4[2]), ws_k2, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b4[3]), ws_k3, 1, ws_y, 1)
@@ -99,7 +99,7 @@ local function rkf45_vec_evolve(s, f, t1)
 	 -- k4 step
 	 f(t + $(ah[3]) * h, ws_y, ws_k4)
 
-	 ffi.copy (ws_y, s.y, vecsize)
+	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b5[1]), ws_k1, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b5[2]), ws_k2, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b5[3]), ws_k3, 1, ws_y, 1)
@@ -108,7 +108,7 @@ local function rkf45_vec_evolve(s, f, t1)
 	 -- k5 step
 	 f(t + $(ah[4]) * h, ws_y, ws_k5)
 
-	 ffi.copy (ws_y, s.y, vecsize)
+	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(b6[1]), ws_k1, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b6[2]), ws_k2, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(b6[3]), ws_k3, 1, ws_y, 1)
@@ -119,7 +119,7 @@ local function rkf45_vec_evolve(s, f, t1)
 	 -- since k2 is no more used we could use k2 to store k6
 	 f(t + $(ah[5]) * h, ws_y, ws_k6)
 
-	 ffi.copy (ws_y, s.y, vecsize)
+	 ffi.copy (ws_y, s.raw_y, vecsize)
 	 cblas.cblas_daxpy ($(N), h * $(c1), ws_k1, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(c3), ws_k3, 1, ws_y, 1)
 	 cblas.cblas_daxpy ($(N), h * $(c4), ws_k4, 1, ws_y, 1)
@@ -129,7 +129,7 @@ local function rkf45_vec_evolve(s, f, t1)
 #        if not y_err_only then
             -- we use ws_k2 because it is no longer needed here
             f(t + h, ws_y, ws_k2)
-	    ffi.copy (s.dydt, ws_k2, vecsize)
+	    ffi.copy (s.raw_dydt, ws_k2, vecsize)
 #        end
 
          local yerr, r, d0
@@ -138,7 +138,7 @@ local function rkf45_vec_evolve(s, f, t1)
 #        if y_err_only then
             d0 = $(eps_rel) * ($(a_y) * abs(ws_y[$(i)])) + $(eps_abs)
 #        else
-            d0 = $(eps_rel) * ($(a_y) * abs(ws_y[$(i)]) + $(a_dydt) * abs(h * s.dydt[$(i)])) + $(eps_abs)
+            d0 = $(eps_rel) * ($(a_y) * abs(ws_y[$(i)]) + $(a_dydt) * abs(h * s.raw_dydt[$(i)])) + $(eps_abs)
 #        end
          r = abs(yerr) / abs(d0)
          rmax = max(r, rmax)
@@ -153,10 +153,10 @@ local function rkf45_vec_evolve(s, f, t1)
 
 #  if y_err_only then
       f(t + h, ws_y, ws_k2)
-      ffi.copy (s.dydt, ws_k2, vecsize)
+      ffi.copy (s.raw_dydt, ws_k2, vecsize)
 #  end
 
-   ffi.copy (s.y, ws_y, vecsize)
+   ffi.copy (s.raw_y, ws_y, vecsize)
 
    s.t = t + h
    s.h = hadj
@@ -164,11 +164,23 @@ local function rkf45_vec_evolve(s, f, t1)
    return h
 end
 
-local mt = {
-   __index = {init= ode_vec_init, evolve= rkf45_vec_evolve}
-}
 
-odevec_t = ffi.metatype(odevec_t, mt)
+do
+   local convert_to_matrix = function(s, k)
+      local y = matrix.new($(N), 1)
+      ffi.copy(y.data, s[k], vecsize)
+      return y
+   end
+   local funcs = {init= ode_vec_init, evolve= rkf45_vec_evolve}
+   local fields = {y = "raw_y", dydt = "raw_dydt"}
+   local mt = {
+   __index = function(s, k)
+      return funcs[k] or convert_to_matrix(s, fields[k])
+   end
+    }
+   odevec_t = ffi.metatype(odevec_t, mt)
+end
+
 
 local function ode_vec_new()
    return ffi.new(odevec_t)
