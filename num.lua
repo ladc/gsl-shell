@@ -59,10 +59,7 @@ function num.odevec(spec)
 
    local ode = template.load(method .. '-vec', spec)
 
-   local mt = {
-      __index = {evolve = ode.evolve, init = ode.init}
-   }
-   return setmetatable(ode.new(), mt)
+   return ode.new()
 end
 
 local NLINFIT = {

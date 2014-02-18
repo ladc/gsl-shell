@@ -39,6 +39,13 @@ local cblas = require 'cblas'
 
 local RowMajor, Trans, NoTrans = gsl.CblasRowMajor, gsl.CblasTrans, gsl.CblasNoTrans
 
+local function ode_vec_init(s, t0, h0, f, y)
+   cblas.cblas_dcopy($(N), y, 1, s.y, 1)
+   f(t0, y, s.dydt)
+   s.t = t0
+   s.h = h0
+end
+
 local function hadjust(rmax, h)
    local S = 0.9
    if rmax > 1.1 then
@@ -247,10 +254,15 @@ local function rk8pd_vec_evolve(s, f, t1)
    return h
 end
 
+local mt = {
+   __index = {init= ode_vec_init, evolve= rk8pd_vec_evolve}
+}
+
 local function ode_vec_new()
    local n = $(N)
    local ws = matrix.new(6 + 13, n)
-   return {t    = 0,
+   return setmetatable(
+          {t    = 0,
 	   h    = 1,
 	   dim  = n,
 
@@ -265,14 +277,7 @@ local function ode_vec_new()
 
 	   -- ensure that allocated data is not collected
 	   __ws = ws,
-	}
+	}, mt)
 end
 
-local function ode_vec_init(s, t0, h0, f, y)
-   cblas.cblas_dcopy($(N), y, 1, s.y, 1)
-   f(t0, y, s.dydt)
-   s.t = t0
-   s.h = h0
-end
-
-return {new= ode_vec_new, init= ode_vec_init, evolve= rk8pd_vec_evolve}
+return {new= ode_vec_new}

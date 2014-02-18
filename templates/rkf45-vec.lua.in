@@ -24,21 +24,21 @@ local abs, max, min = math.abs, math.max, math.min
 
 local ffi = require "ffi"
 
-local cblas = require 'cblas'
-
 local vecsize = $(N) * ffi.sizeof('double')
 
-local function ode_vec_new()
-   return {t    = 0,
-	   h    = 1,
-	   dim  = $(N),
-	   y     = ffi.new("double[$(N)]"),
-	   dydt  = ffi.new("double[$(N)]"),
-	}
-end
+local cblas = require 'cblas'
+
+local odevec_t = ffi.typeof([[
+  struct {
+    double t;
+    double h;
+    double y[$(N)];
+    double dydt[$(N)];
+  }
+]])
 
 local function ode_vec_init(s, t0, h0, f, y)
-   cblas.cblas_dcopy($(N), y, 1, s.y, 1)
+   ffi.copy(s.y, y, vecsize)
    f(t0, s.y, s.dydt)
    s.t = t0
    s.h = h0
@@ -164,4 +164,14 @@ local function rkf45_vec_evolve(s, f, t1)
    return h
 end
 
-return {new= ode_vec_new, init= ode_vec_init, evolve= rkf45_vec_evolve}
+local mt = {
+   __index = {init= ode_vec_init, evolve= rkf45_vec_evolve}
+}
+
+odevec_t = ffi.metatype(odevec_t, mt)
+
+local function ode_vec_new()
+   return ffi.new(odevec_t)
+end
+
+return {new = ode_vec_new}
